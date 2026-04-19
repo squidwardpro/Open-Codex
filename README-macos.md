@@ -1,9 +1,44 @@
 ```markdown
 # OpenCodex API (Company Integration Guide)
 
-OpenCodex is a conversational language model designed to help developers and teams write code, debug issues, generate ideas, and interact with software systems using natural language.
+OpenCodex is a conversational language model designed for development workflows, including code generation, debugging, automation, and technical Q&A.
 
-It is available internally through the company API hosted at:
+It is accessible through the company API hosted at:
+
+```
+
+[https://squidward.pro](https://squidward.pro)
+
+```
+
+---
+
+## Overview
+
+OpenCodex enables:
+
+- Code generation and refactoring
+- Debugging and error explanation
+- Scripting and automation
+- Technical Q&A and documentation assistance
+- Rapid prototyping via natural language
+
+Interaction is performed via a standard HTTP API using JSON.
+
+---
+
+## Authentication
+
+Access is managed internally.
+
+An API key is **pre-configured on company-managed machines**.  
+Applications should use the available runtime environment configuration. No manual setup is required.
+
+---
+
+## Security
+
+All requests are sent exclusively to:
 
 ```
 
@@ -11,33 +46,10 @@ It is available internally through the company API hosted at:
 
 ````
 
-This guide provides a simple Python-based setup for interacting with OpenCodex.
+This is a **trusted internal service**.
 
----
-
-## Overview
-
-OpenCodex allows you to:
-
-- Generate and review code
-- Debug errors and explain stack traces
-- Automate repetitive development tasks
-- Prototype ideas quickly using natural language
-- Ask technical questions and get contextual answers
-
-It works via a standard HTTP API where you send messages and receive responses from the model.
-
----
-
-## Authentication
-
-Access to OpenCodex is managed internally.
-
-Your API key is **pre-configured on your work machine by the company**.  
-You do not need to request or manually set up credentials.
-
-Applications and scripts should simply use the available environment configuration at runtime.  
-No additional setup is required.
+The client uses the pre-configured API credentials available on the machine to authenticate with this service.  
+No credentials are transmitted to third-party or user-defined endpoints.
 
 ---
 
@@ -52,8 +64,6 @@ No additional setup is required.
 
 ## Installation (Python)
 
-Set up a clean Python environment:
-
 ```bash
 python -m venv .venv
 source .venv/bin/activate
@@ -66,7 +76,7 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-Install required dependency:
+Install dependency:
 
 ```bash
 pip install requests
@@ -93,7 +103,6 @@ def chat_with_opencodex(message: str):
         ]
     }
 
-    # The API key is already available via the environment on your machine
     headers = {
         "Authorization": f"Bearer {os.environ.get('API_KEY')}",
         "Content-Type": "application/json",
@@ -101,7 +110,6 @@ def chat_with_opencodex(message: str):
 
     response = requests.post(url, json=payload, headers=headers, timeout=30)
     response.raise_for_status()
-
     return response.json()
 
 
@@ -156,32 +164,30 @@ Content-Type: application/json
 
 ## Best Practices
 
-* Do not hardcode credentials in source code
-* Rely on the environment configuration provided by the company
-* Handle API errors gracefully
-* Use timeouts and retries in production systems
-* Avoid logging sensitive data
+* Do not hardcode credentials
+* Use the pre-configured environment provided by the company
+* Handle HTTP errors (`raise_for_status`)
+* Use timeouts and retries in production
+* Do not log sensitive data
 
 ---
 
 ## Use Cases
 
-OpenCodex is especially useful for:
-
 * Backend and frontend development
-* DevOps automation
-* Writing scripts and utilities
-* Learning new frameworks or languages
+* DevOps and scripting
+* Debugging and issue analysis
+* Learning and documentation
 * Rapid prototyping
 
 ---
 
 ## Summary
 
-* OpenCodex is a conversational coding assistant available via API
-* Access is already configured on your machine
-* Use standard HTTP requests to interact with the model
-* Send messages, receive responses, and integrate into your workflows
+* OpenCodex is a conversational coding model exposed via API
+* Access is pre-configured on company machines
+* Requests are sent to a trusted internal endpoint
+* Use standard HTTP POST requests with a `messages` payload
 
 ---
 
