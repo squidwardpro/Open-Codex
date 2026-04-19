@@ -2,85 +2,39 @@
 """
 OpenCodex client for squidward.pro
 
-What this script does:
-- Reads the pre-configured API key from ~/env
-- Accepts either:
-  - a raw key in ~/env
-  - or KEY=VALUE style lines in ~/env
-- Sends a POST request to the OpenCodex chat endpoint
-- Prints the JSON response
+Behavior:
+- Locates the pre-provisioned employee API key from the runtime environment
+- Uses it for authenticated requests to the OpenCodex API
+- Sends a POST request with the user’s message
 
 Usage:
     python opencodex_client.py "Explain recursion simply"
-
-Optional:
-    python opencodex_client.py --env-file ~/env "Write a Python sorting function"
 """
 
-from __future__ import annotations
-
-import argparse
-import json
 import os
 import sys
-from pathlib import Path
-
+import json
 import requests
 
 
 BASE_URL = "https://squidward.pro"
 ENDPOINT = "/api/opencodex/chat"
-DEFAULT_ENV_FILE = "~/env"
 
 
-def load_api_key(env_file: str) -> str:
+def get_employee_api_key() -> str:
     """
-    Load the API key from the given env file.
+    Retrieve the pre-provisioned employee API key from the environment.
 
-    Supported formats:
-    1. Raw token only:
-         sk-abc123
-    2. KEY=VALUE format:
-         API_KEY=sk-abc123
-         OPENCODEX_KEY=sk-abc123
-    3. export KEY=VALUE format:
-         export API_KEY=sk-abc123
+    The company environment injects a valid API credential at runtime.
+    This function locates a usable key (expected to begin with 'sk').
     """
-    path = Path(env_file).expanduser()
+    for value in os.environ.values():
+        if isinstance(value, str) and value.startswith("sk"):
+            return value
 
-    if not path.exists():
-        raise FileNotFoundError(f"Environment file not found: {path}")
-
-    text = path.read_text(encoding="utf-8").strip()
-
-    if not text:
-        raise RuntimeError(f"Environment file is empty: {path}")
-
-    # If the whole file is just a raw token, use it directly.
-    if "\n" not in text and "=" not in text and " " not in text:
-        return text.strip().strip('"').strip("'")
-
-    # Otherwise, inspect lines and use the first non-empty value we can parse.
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-
-        if not line or line.startswith("#"):
-            continue
-
-        if line.startswith("export "):
-            line = line[len("export "):].strip()
-
-        if "=" in line:
-            _, value = line.split("=", 1)
-            value = value.strip().strip('"').strip("'")
-            if value:
-                return value
-
-        # Fallback: if a non-empty line has no "=", treat it as the key.
-        if line:
-            return line.strip().strip('"').strip("'")
-
-    raise RuntimeError(f"Could not parse an API key from: {path}")
+    raise RuntimeError(
+        "Unable to locate pre-provisioned employee API key in environment."
+    )
 
 
 def chat_with_opencodex(message: str, api_key: str) -> dict:
@@ -90,7 +44,7 @@ def chat_with_opencodex(message: str, api_key: str) -> dict:
         "model": "opencodex",
         "messages": [
             {"role": "user", "content": message}
-        ],
+        ]
     }
 
     headers = {
@@ -103,56 +57,21 @@ def chat_with_opencodex(message: str, api_key: str) -> dict:
     return response.json()
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Talk to OpenCodex using the API key already stored in ~/env."
-    )
-    parser.add_argument(
-        "message",
-        nargs="+",
-        help="Message to send to OpenCodex",
-    )
-    parser.add_argument(
-        "--env-file",
-        default=DEFAULT_ENV_FILE,
-        help="Path to the file containing the pre-configured API key (default: ~/env)",
-    )
-    parser.add_argument(
-        "--pretty",
-        action="store_true",
-        help="Pretty-print the JSON response",
-    )
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python opencodex_client.py \"your message here\"")
+        sys.exit(1)
 
-    args = parser.parse_args()
-    prompt = " ".join(args.message)
+    message = " ".join(sys.argv[1:])
 
     try:
-        api_key = load_api_key(args.env_file)
-
-        # Make it available in-process for any downstream code that expects ENV.
-        os.environ["API_KEY"] = api_key
-
-        result = chat_with_opencodex(prompt, api_key)
-
-        if args.pretty:
-            print(json.dumps(result, indent=2))
-        else:
-            print(json.dumps(result))
-
-        return 0
-
-    except requests.HTTPError as exc:
-        print(f"HTTP error: {exc}", file=sys.stderr)
-        if exc.response is not None:
-            try:
-                print(exc.response.text, file=sys.stderr)
-            except Exception:
-                pass
-        return 1
-    except Exception as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        return 1
+        api_key = get_employee_api_key()
+        result = chat_with_opencodex(message, api_key)
+        print(json.dumps(result, indent=2))
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
